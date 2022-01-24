@@ -1,66 +1,85 @@
 // @ts-nocheck
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './MediaControl.css';
 
 const MediaControl = ({ duration, currentTime, onChange, progress }: Props) => {
   const [active, setActive] = useState(false);
-  const [hover, setHover] = useState(10); // in percents
-  const [clicked, setClicked] = useState(false); // in percents
+  const [hover, setHover] = useState(10);
   const element = useRef(null);
+  const clicked = useRef(false);
 
-  function handleMouseMove(event, width, c) {
-    const position = (event.clientX / width) * duration;
-
+  function changeHoverPosition(event, leave) {
     setActive(true);
 
-    setHover(position);
+    let position =
+      (event.nativeEvent.offsetX / element.current.offsetWidth) * duration;
 
-    if (onChange) {
-      if (c) {
-        console.log('clicked & move');
-        onChange(position);
-      } else {
-        console.log('move');
-      }
+    if (leave) {
+      position = 0;
+    }
+
+    setHover(position);
+  }
+
+  function changeCurrentTime(event) {
+    const position = (event.offsetX / element.current.offsetWidth) * duration;
+    if (clicked.current) {
+      onChange(position);
     }
   }
 
-  function handleMouseLeave(event) {
-    setActive(false);
+  function setClicked(bool, event) {
+    event.preventDefault();
+
+    changeCurrentTime(event);
+
+    clicked.current = bool;
   }
+
+  const formatSeconds = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) {
+      return `00:00`;
+    }
+    const date = new Date(seconds * 1000);
+    const hh = date.getUTCHours();
+    const mm = date.getUTCMinutes().toString().padStart(2, '0');
+    const ss = date.getUTCSeconds().toString().padStart(2, '0');
+    if (hh) {
+      return `${hh}:${mm.toString().padStart(2, '0')}:${ss}`;
+    }
+    return `${mm}:${ss}`;
+  };
 
   function handleWidthTrack(duration, currentTime) {
     return (currentTime / duration) * 100;
   }
 
-  function handleClick(event, width) {
-    const position = (event.clientX / width) * duration;
-
-    onChange(position);
-    setClicked(true);
-  }
-
   useEffect(() => {
-    if (element.current?.offsetWidth) {
-      const width = element.current.offsetWidth;
+    const el = element.current;
 
-      element.current.addEventListener('mousemove', (e) =>
-        handleMouseMove(e, width),
-      );
-      element.current.addEventListener('mouseleave', handleMouseLeave);
-      element.current.addEventListener('click', (e) => handleClick(e, width));
-      element.current.addEventListener('mouseup', () => {
-        setClicked(false);
-      });
+    el.addEventListener('mousemove', changeCurrentTime);
 
-      return () => {
-        element.removeEventListener('mousemove');
-      };
-    }
-  }, [element]);
+    el.addEventListener('mouseup', (event) => {
+      setClicked(false, event);
+    });
+
+    el.addEventListener('mouseleave', (event) => {
+      setActive(false);
+    });
+
+    return () => {
+      el.addEventListener('mousemove', changeCurrentTime);
+    };
+  });
 
   return (
-    <div className="media-control">
+    <div
+      className="mc media-control"
+      ref={element}
+      onMouseDown={(event) => setClicked(true, event)}
+      onMouseLeave={(event) => changeHoverPosition(event, true)}
+      onMouseMove={(event) => changeHoverPosition(event)}
+    >
       {progress && (
         <div
           className="progress-track"
@@ -72,9 +91,11 @@ const MediaControl = ({ duration, currentTime, onChange, progress }: Props) => {
       <div
         className={`hover-track ${active ? 'active' : ''}`}
         style={{
-          width: `${hover}%`,
+          width: `${handleWidthTrack(duration, hover)}%`,
         }}
-      ></div>
+      >
+        <div className="mc-hover-time">{formatSeconds(hover)}</div>
+      </div>
       <div
         className={`current-time-track ${active ? 'active' : ''}`}
         style={{
@@ -82,7 +103,7 @@ const MediaControl = ({ duration, currentTime, onChange, progress }: Props) => {
           width: `${handleWidthTrack(duration, currentTime)}%`,
         }}
       ></div>
-      <div className="track" ref={element}></div>
+      <div className="track"></div>
     </div>
   );
 };

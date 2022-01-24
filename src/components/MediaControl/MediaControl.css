@@ -1,6 +1,13 @@
+:root {
+  --bg-color: #303030;
+  --fg-color: white;
+  --primary-color: #f41515;
+}
+
 .media-control {
   position: relative;
   height: 8px;
+  transition: 0.3s;
 }
 
 .track {
@@ -18,7 +25,7 @@
 
 .current-time-track {
   position: absolute;
-  background-color: red;
+  background-color: var(--primary-color);
   height: 100%;
 }
 
@@ -28,21 +35,43 @@
   height: 100%;
   width: 75%;
   opacity: 0;
-  transition: 0.3s;
+  transition: opacity 0.3s;
 }
 
 .current-time-track::after {
   content: '';
   position: absolute;
-  background-color: red;
+  background-color: var(--primary-color);
   border-radius: 50%;
   top: -50%;
   right: -8px;
   width: 16px;
   height: 16px;
   z-index: 10;
+  opacity: 0;
 }
 
 .hover-track.active {
+  opacity: 1;
+}
+
+.current-time-track.active::after {
+  opacity: 1;
+}
+
+.mc-hover-time {
+  position: absolute;
+  opacity: 0;
+  left: 100%;
+  transform: translateX(-50%);
+  top: -32px;
+  padding: 0.25rem;
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+  font-size: 12px;
+  z-index: 10;
+}
+
+.active .mc-hover-time {
   opacity: 1;
 }
